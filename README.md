@@ -461,6 +461,9 @@ mDSKernel.sendFile(DSKernel.getDSDPackageName(), filePath, new ISendCallback(){
 
 void playVideo(long fileId){
     String json = UPacketFactory.createJson(DataModel.VIDEO, "");
+    mDSKernel.sendCMD(DSKernel.getDSDPackageName(), json, fileId, null);
+}
+```
     
 #### 7.全屏显示幻灯片(14寸屏)
 
@@ -470,6 +473,7 @@ void playVideo(long fileId){
 
 
 开发者需要准备好多张图片，调用sendFiles方法传递多张图片的路径给副显程序，幻灯片的默认切换时间是10秒，主屏app可以通过传递参数改变时间，详情请参考如下代码
+
 ```
 JSONObject json = new JSONObject();
 json.put("interval",5000); //幻灯片的切换时间，用毫秒计算，如果不传默认是10000毫秒
