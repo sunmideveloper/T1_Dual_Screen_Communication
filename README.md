@@ -1,5 +1,4 @@
 # T1双屏通信
-the basic use of DSD
 
 ## 商米T1有两种双屏配置：
 
