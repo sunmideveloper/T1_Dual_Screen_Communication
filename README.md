@@ -125,6 +125,7 @@ mDSKernel.checkFileExist(fileId, new ICheckFileCallback(){
 显示标题和内容两行字符，布局格式是商米规定好的，主屏app只要向副显程序发送json格式的数据即可。
 
 效果图如下：
+
 ![Alt SUNMI](https://github.com/sunmideveloper/T1_Dual_Screen_Communication/blob/master/image/5.jpg) 
 
 发数据时代码如下：
@@ -169,8 +170,7 @@ String titleContentJsonStr= json.toString();
 private void showQRCode(long fileId) {
       String json = UPacketFactory.createJson(sunmi.ds.data.DataModel.QRCODE,"");
       mDSKernel.sendCMD(DSKernel.getDSDPackageName(), json, fileId, null);
-    }
-    ```
+```
     
 ### 三、14寸副显app能显示以下7种布局
 
@@ -181,3 +181,320 @@ private void showQRCode(long fileId) {
 5. 全屏显示单张图片
 6. 全屏显示幻灯片
 7. 全屏显示视频
+
+以下讲解14寸屏副显程序显示各个布局时，主屏app需要向副显程序传递的数据内容：
+
+#### 1.全屏只显示复杂的表格字符数据(14寸屏)
+
+全屏显示表格数据，该显示布局固定三个显示区域：标题区，清单区，结算区。标题区只能显示一串字符；清单区域会显示一个表格，可以显示1到8列字段，行数不限制，但是超过屏幕能显示的行，将自动滚动到最下面的行；结算区域可以显示1到8个字段。格式是商米固定的，但是字段标题和数据内容是主屏app传递的。
+
+效果图如下：
+
+![Alt SUNMI](https://github.com/sunmideveloper/T1_Dual_Screen_Communication/blob/master/image/7.jpg) 
+
+代码如下：
+
+```
+/**
+*receiverPackageName 接收数据的副屏显示app的包名DataType.DATA 
+*DataType.DATA 
+*DataModel.TEXT 
+*jsonStr 显示的数据内容,具体格式参见下面的框
+*callback 回调
+*/
+DataPacket pack = buildPack(receiverPackageName, DataType.DATA, DataModel.TEXT, jsonStr, callback);//
+mDSKernel.sendData(pack);
+```
+
+上面的jsonStr的数据格式如下框所示，请开发者参照如下的格式生成JSON格式的数据.其中title定义标题区显示的内容，head定义清单区中的字段标题，请按参照Demo生成相应的数据，请注意对应的字段个数符合规范，以下字符的key值：title，head，list，KVPlist，name，value是固定的写法，param1,param2...param8是顺序递增的，如果格式不对，将无法显示效果。
+
+```
+{
+        "title": "三米奶茶店欢迎您", 
+        "head": {
+            "param1": "序列号",
+            "param2": "商品名",
+            "param3": "单价"，
+            "param4": "数量"，
+            "param5": "小结"
+        },
+        "list": [
+            {
+              "param1": "1",
+              "param2": "华夫饼",
+              "param3": "10.00"，
+              "param4": "1"，
+             "param5":"10.00"
+            },
+            {
+              "param1": "1",
+              "param2": "吞拿鱼华夫饼",
+              "param3": "12.00"，
+              "param4": "1"，
+             "param5":"12.00"
+            }
+            ... ...//这里是相同格式的数据
+        ],
+        "KVPList": [
+            {
+                "name": "收款",
+                "value": "￥40.00"
+            },
+            {
+                "name": "优惠",
+                "value": "￥3.00"
+            }，
+           {
+                "name": "找零",
+                "value": "￥3.00"
+            }，
+           {
+                "name": "实收",
+                "value": "￥37.00"
+            }
+        ]
+}
+
+数据格式说明：
+1:title字段为标题
+2:head字段是表头字段
+3:list是商品列表，表头和表的字段数量要一致 
+4:KVPList为结算键值对列表
+
+规则:
+当只显示购物清单时：head的params赋值个数最小1个最大8个;list中每个元素的params赋值个数最小1个最大8个；KVPList的size最小1个最大8个。
+
+```
+
+#### 2.屏幕左边显示图片，右边显示复杂的表格数据(14寸屏)
+
+左边区域显示图片,建议的图片大小为1186*1080；右边区域显示复杂的表格数据，同样也分三个显示区：标题区，清单区，结算区。标题区只能显示一串字符；清单区域会显示一个表格，最多显示4列字段，超过屏幕范围的行数据可滚动显示；结算区域可以显示1到4个字段。
+
+效果图：
+
+![Alt SUNMI](https://github.com/sunmideveloper/T1_Dual_Screen_Communication/blob/master/image/7.jpg) 
+
+代码如下：
+
+```
+String filePath = "xxx/img.png";//显示的图片路径
+mDSKernel.sendFile(DSKernel.getDSDPackageName(), filePath, new ISendCallback() {
+    public void onSendSuccess(long fileId) {
+        show(fileId, jsonStr);//图片发送成功，显示文字内容
+    } 
+    public void onSendFail(int errorId, String errorInfo) {}
+    public void onSendProcess(long total, long sended) {}
+});
+
+void show(long fileId, String jsonStr){
+    jsonStr = UPacketFactory.createJson(DataModel.SHOW_IMG_LIST, jsonStr);//第一个参数DataModel.SHOW_IMG_LIST为显示布局模式，jsonStr为要显示的内容字符
+    mDSKernel.sendCMD(DSKernel.getDSDPackageName(), jsonStr, fileId,null);
+}
+
+```
+
+上面的jsonStr的数据格式如下框所示，请开发者参照如下的格式生成JSON格式的数据，其中title定义标题区显示的内容，head定义清单区中的字段标题，请按参照Demo生成相应的数据，请注意对应的字段个数符合规范，以下字符的key值：title，head，list，KVPlist，name，value是固定的写法，param1,param2...param4是顺序递增的。
+
+```
+{
+        "title": "商米奶茶店欢迎你",
+        "head": {
+          "param1": "商品名",
+            "param2": "单价"，
+            "param3": "数量"，
+           "param4":"小结"
+        },
+        "list": [
+            {
+           
+              "param1": "华夫饼",
+              "param2": "10.00"，
+              "param3": "1"，
+             "param4":"10.00"
+            },
+            {
+            
+              "param1": "吞拿鱼华夫饼",
+              "param2": "12.00"，
+              "param3": "1"，
+             "param4":"12.00"
+            }
+            ... ...
+        ],
+        "KVPList": [
+            {
+                "name": "收款",
+                "value": "￥40.00"
+            },
+            {
+                "name": "优惠",
+                "value": "￥3.00"
+            }，
+           {
+                "name": "找零",
+                "value": "￥3.00"
+            }，
+           {
+                "name": "实收",
+                "value": "￥37.00"
+            }
+        ]
+}
+
+JSON数据格式说明：
+1:title字段为标题
+2:head字段是表头字段
+3:list是商品列表，表头和表的字段数量要一致 
+4:KVPList为结算键值对列表
+
+规则:
+当显示图文混合时：head的params赋值个数最小1个最大4个;list中每个元素的params赋值个数最小1个最大4个；KVPList的size最小1个最大4个。
+
+```
+
+#### 3.屏幕左边显示幻灯片，右边显示复杂的表格数据(14寸屏)
+
+左边区域显示幻灯片,建议的图片大小为1186*1080；右边区域显示复杂的表格数据，同样也分三个显示区：标题区，清单区，结算区。标题区只能显示一串字符；清单区域会显示一个表格，最多显示4列字段，超过屏幕范围的行数据可滚动显示；结算区域可以显示1到4个字段。
+
+
+效果图：
+
+![Alt SUNMI](https://github.com/sunmideveloper/T1_Dual_Screen_Communication/blob/master/image/7.jpg) 
+
+代码如下：
+
+```
+List<String> paths = new ArrayList<>();
+paths.add(Environment.getExternalStorageDirectory().getPath() + "/sunmi1.png");
+paths.add(Environment.getExternalStorageDirectory().getPath() + "/sunmi2.png");
+paths.add(Environment.getExternalStorageDirectory().getPath() + "/sunmi3.png");
+paths.add(Environment.getExternalStorageDirectory().getPath() + "/sunmi4.png");
+
+mDSKernel.sendFiles(DSKernel.getDSDPackageName(), "", paths, new ISendFilesCallback() {
+    @Override
+    public void onAllSendSuccess(long fileId) {               
+      sendImgsListCMD(fileId,json);                           
+    }
+
+    @Override
+    public void onSendSuccess(String path, long taskId) {}
+    @Override
+    public void onSendFaile(int errorId, String errorInfo) {}
+    @Override
+    public void onSendFileFaile(String path, int errorId, String errorInfo) {}
+    @Override
+    public void onSendProcess(String path, long totle, long sended) {}
+    });
+    
+    void sendImgsListCMD(long fileId, String jsonStr){   
+      jsonStr= UPacketFactory.createJson(DataModel.SHOW_IMGS_LIST, json);
+        mDSKernel.sendCMD(DSKernel.getDSDPackageName(), jsonStr, fileId,null);
+    }
+```
+上面的jsonStr的数据格式规则和布局2中的规则一样，在此不做赘述。
+
+#### 4.屏幕左边显示视频，右边显示复杂的表格数据
+
+
+左边区域显示视频，建议的分辨率大小为1186*1080；右边区域显示复杂的表格数据，同样也分三个显示区：标题区，清单区，结算区。标题区只能显示一串字符；清单区域会显示一个表格，最多显示4列字段，超过屏幕范围的行数据可滚动显示；结算区域可以显示1到4个字段。
+
+效果图：
+
+![Alt SUNMI](https://github.com/sunmideveloper/T1_Dual_Screen_Communication/blob/master/image/7.jpg)
+
+```
+String filePath = "xxx/video.mp4";//显示的视频路径
+mDSKernel.sendFile(DSKernel.getDSDPackageName(), filePath, new ISendCallback() {
+    public void onSendSuccess(long fileId) {
+        show(fileId, jsonStr);//视频发送成功
+    } 
+    public void onSendFail(int errorId, String errorInfo) {}
+    public void onSendProcess(long total, long sended) {}
+});
+
+void show(long fileId, String jsonStr){
+    jsonStr = UPacketFactory.createJson(DataModel.SHOW_VIDEO_LIST, jsonStr);
+    mDSKernel.sendCMD(DSKernel.getDSDPackageName(), jsonStr, fileId,null);
+}
+```
+
+上面的jsonStr的数据格式规则和布局2中的规则一样，在此不做赘述。
+#### 5.全屏显示单张图片(14寸屏)
+
+效果图：
+![Alt SUNMI](https://github.com/sunmideveloper/T1_Dual_Screen_Communication/blob/master/image/7.jpg)
+
+和7寸屏的写法类似，先发送图片，发送成功后，在回调里面发送控制指令显示图片，代码如下：
+```
+String filePath = "/sdcard/img.png";
+mDSKernel.sendFile(DSKernel.getDSDPackageName(), filePath, new ISendCallback(){
+    public void onSendSuccess(long l) {
+       showImg(fileId);//先发送图片
+    }
+    public void onSendFail(int i, String s) {}
+    public void onSendProcess(long l, long l1) {}
+});
+
+void showImg(long fileId){
+    String json = UPacketFactory.createJson(DataModel.SHOW_IMG_WELCOME, "def");
+    mDSKernel.sendCMD(DSKernel.getDSDPackageName(), json, fileId, null);
+}
+```
+
+#### 6.全屏显示视频(14寸屏)
+
+效果图：
+
+![Alt SUNMI](https://github.com/sunmideveloper/T1_Dual_Screen_Communication/blob/master/image/7.jpg)
+
+
+第一次显示视频的时候，传递的过程可能会很长，开发者应该在适当的时候先将视频传递给副显程序，副显程序将缓存视频，代码如下：
+```
+String filePath = "/sdcard/onepiece.mp4";
+mDSKernel.sendFile(DSKernel.getDSDPackageName(), filePath, new ISendCallback(){
+    public void onSendSuccess(long l) {
+       playVideo(fileId);
+    }
+    public void onSendFail(int errorId, String errorInfo) {}
+    public void onSendProcess(long total, long sended) {}
+});
+
+void playVideo(long fileId){
+    String json = UPacketFactory.createJson(DataModel.VIDEO, "");
+    
+#### 7.全屏显示幻灯片(14寸屏)
+
+效果图如下：
+
+![Alt SUNMI](https://github.com/sunmideveloper/T1_Dual_Screen_Communication/blob/master/image/7.jpg)
+
+
+开发者需要准备好多张图片，调用sendFiles方法传递多张图片的路径给副显程序，幻灯片的默认切换时间是10秒，主屏app可以通过传递参数改变时间，详情请参考如下代码
+```
+JSONObject json = new JSONObject();
+json.put("interval",5000); //幻灯片的切换时间，用毫秒计算，如果不传默认是10000毫秒
+List<String> pathList = new ArrayList<>();
+pathList.add("/sdcard/img1.png");
+pathList.add("/sdcard/img2.png");
+...
+mDSKernel.sendFiles(DSKernel.getDSDPackageName(), json.toString(), pathList, new ISendFilesCallback() {
+    public void onAllSendSuccess(long fileId) {
+        show(fileId);
+    }
+    public void onSendSuccess(final String s,final long l) {}
+    public void onSendFaile(int errorId, String errorInfo) {}
+    public void onSendFileFaile(String path, int errorId, String errorInfo){}
+    public void onSendProcess(String path, long total, long sended) {}
+});
+
+private void show(long fileId) {
+    String json = UPacketFactory.createJson(DataModel.IMAGES,"");
+    mDSKernel.sendCMD(DSKernel.getDSDPackageName(),json,fileId,null);
+}
+```
+    mDSKernel.sendCMD(DSKernel.getDSDPackageName(), json, fileId, null);
+}
+```
+
+补充说明：
+以上为商米T1内置显示程序目前支持的布局，更多的布局将在后续添加，开发者也可以自己开发适配商米T1的副显程序。
