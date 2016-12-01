@@ -496,9 +496,6 @@ private void show(long fileId) {
     mDSKernel.sendCMD(DSKernel.getDSDPackageName(),json,fileId,null);
 }
 ```
-    mDSKernel.sendCMD(DSKernel.getDSDPackageName(), json, fileId, null);
-}
-```
 
 补充说明：
 以上为商米T1内置显示程序目前支持的布局，更多的布局将在后续添加，开发者也可以自己开发适配商米T1的副显程序。
